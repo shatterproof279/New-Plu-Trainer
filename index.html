@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>PLU Code Trainer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Link to the stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- Navigation Bar -->
+  <nav id="main-nav">
+    <span id="user-display"></span>
+    <div id="nav-buttons">
+      <button id="leaderboard-menu-button">Leaderboard</button>
+      <button id="change-user-button" style="display: none;">Change User</button>
+    </div>
+  </nav>
+
+  <!-- Main Container -->
+  <div class="container">
+    <!-- Header -->
+    <header>
+      <h1>PLU Code Trainer</h1>
+    </header>
+
+    <!-- Username Input -->
+    <section id="username-section" style="display: none;">
+      <p>Please enter your username to start:</p>
+      <input type="text" id="username-input" placeholder="Username">
+      <button id="start-button">Start</button>
+    </section>
+
+    <!-- Mode Selection -->
+    <section id="mode-selection" style="display: none;">
+      <h2>Select Quiz Mode</h2>
+      <div class="button-group" id="mode-buttons-container">
+        <!-- Mode buttons will be dynamically inserted here -->
+      </div>
+
+      <h2>Select Answer Mode</h2>
+      <div class="button-group">
+        <button class="answer-mode-button" data-answer-mode="multiple-choice"><span>Multiple Choice</span></button>
+        <button class="answer-mode-button" data-answer-mode="type-answer"><span>Type the Answer</span></button>
+      </div>
+
+      <h2>Timer Settings</h2>
+      <div class="toggle-group">
+        <label class="switch">
+          <input type="checkbox" id="timer-toggle" checked>
+          <span class="slider round"></span>
+        </label>
+        <span id="timer-status">Timer On</span>
+      </div>
+
+      <button id="begin-quiz-button" disabled>Begin Quiz</button>
+    </section>
+
+    <!-- Quiz Interface -->
+    <section id="quiz-interface" style="display: none;">
+      <div id="quiz-header">
+        <p id="progress-display">Question 1 of X</p>
+        <div id="progress-bar-container">
+          <div id="progress-bar"></div>
+        </div>
+        <p id="score-display">Score: 0</p>
+        <p id="combo-display">Combo: 0</p>
+        <p id="timer-display">Time Left: 15s</p>
+      </div>
+      <div id="quiz-container"></div>
+      <div id="control-buttons">
+        <button id="skip-button">Skip</button>
+        <button id="pause-button">Pause</button>
+        <button id="reset-button">Reset Quiz</button>
+        <button id="exit-button">Exit Quiz</button>
+      </div>
+    </section>
+
+    <!-- Pause Overlay -->
+    <div id="pause-overlay" style="display: none;">
+      <div id="pause-message">
+        <h2>Quiz Paused</h2>
+        <p>Press "Resume" to continue.</p>
+        <button id="resume-button">Resume</button>
+      </div>
+    </div>
+
+    <!-- Feedback Overlay -->
+    <div id="feedback-overlay" style="display: none;">
+      <div id="feedback-message">
+        <h2 id="feedback-header">Feedback</h2>
+        <p id="feedback-text"></p>
+        <button id="continue-button">Continue</button>
+      </div>
+    </div>
+
+    <!-- Custom Modal -->
+    <div id="custom-modal" style="display: none;">
+      <div id="modal-content">
+        <p id="modal-message"></p>
+        <div id="modal-buttons">
+          <button id="modal-confirm-button">OK</button>
+          <button id="modal-cancel-button" style="display: none;">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Audio Elements -->
+  <audio id="correct-sound" src="sounds/correct.mp3" preload="auto"></audio>
+  <audio id="incorrect-sound" src="sounds/incorrect.mp3" preload="auto"></audio>
+
+  <!-- Link to the script -->
+  <script src="script.js"></script>
+</body>
+</html>
