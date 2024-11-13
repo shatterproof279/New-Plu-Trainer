@@ -228,6 +228,7 @@ document.addEventListener('DOMContentLoaded', () => {
     wrongAnswers = [];
     updateScoreDisplay();
     updateComboDisplay();
+    updateProgressBar(); // Reset progress bar
     loadQuestion();
   }
 
@@ -376,34 +377,58 @@ document.addEventListener('DOMContentLoaded', () => {
       inputField.inputMode = 'numeric';
       quizContainer.appendChild(inputField);
 
+      // Adjust input field style for mobile devices
+      if (isMobileDevice()) {
+        inputField.style.fontSize = '32px';
+      }
+
       // On-screen Keypad
       const keypad = document.createElement('div');
       keypad.id = 'keypad';
-      const keys = ['1','2','3','4','5','6','7','8','9','0','⌫','Enter'];
-      keys.forEach(key => {
-        const keyButton = document.createElement('button');
-        keyButton.classList.add('keypad-button');
-        keyButton.textContent = key;
-        keyButton.addEventListener('click', () => {
-          if (key === '⌫') {
-            inputField.value = inputField.value.slice(0, -1);
-          } else if (key === 'Enter') {
-            submitAnswer();
-          } else {
-            inputField.value += key;
-          }
-          inputField.focus();
+
+      // Hide keypad on mobile devices
+      if (!isMobileDevice()) {
+        const keys = ['1','2','3','4','5','6','7','8','9','0','⌫','Enter'];
+        keys.forEach(key => {
+          const keyButton = document.createElement('button');
+          keyButton.classList.add('keypad-button');
+          keyButton.textContent = key;
+          keyButton.addEventListener('click', () => {
+            if (key === '⌫') {
+              inputField.value = inputField.value.slice(0, -1);
+            } else if (key === 'Enter') {
+              submitAnswer();
+            } else {
+              inputField.value += key;
+              // Automatically submit if length matches
+              autoSubmitIfLengthMatches();
+            }
+            inputField.focus();
+          });
+          keypad.appendChild(keyButton);
         });
-        keypad.appendChild(keyButton);
-      });
-      quizContainer.appendChild(keypad);
+        quizContainer.appendChild(keypad);
+      }
 
       // Allow pressing Enter key to submit
       inputField.addEventListener('keyup', (event) => {
+        // Automatically submit when length matches
+        autoSubmitIfLengthMatches();
         if (event.key === 'Enter' && feedbackOverlay.style.display === 'none') {
           submitAnswer();
         }
       });
+
+      // Function to automatically submit if input length matches PLU code length
+      function autoSubmitIfLengthMatches() {
+        if (!isPaused && feedbackOverlay.style.display === 'none') {
+          const userInput = inputField.value.trim();
+          const currentPluLength = currentQuestion.code.length;
+          if (userInput.length === currentPluLength) {
+            submitAnswer();
+          }
+        }
+      }
 
       // Function to submit answer
       function submitAnswer() {
@@ -432,6 +457,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  function isMobileDevice() {
+    return /Mobi|Android|iPhone|iPad|iPod|BlackBerry|Windows Phone/i.test(navigator.userAgent);
+  }
+
   function checkAnswer(userAnswer, currentQuestion, selectedButton = null) {
     clearInterval(timer);
     // Remove leading zeros for comparison
@@ -443,6 +472,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function feedback(isCorrect, currentQuestion, timeOut, selectedButton = null) {
     if (isCorrect) {
+      // Play correct sound
+      document.getElementById('correct-sound').play();
+
       comboCount++;
       // Increment score with combo bonus
       score += calculateScore(timeLeft, comboCount);
@@ -463,6 +495,9 @@ document.addEventListener('DOMContentLoaded', () => {
         loadQuestion();
       }
     } else {
+      // Play incorrect sound
+      document.getElementById('incorrect-sound').play();
+
       // Disable input field to prevent further input
       if (inputField) {
         inputField.disabled = true;
@@ -490,6 +525,8 @@ document.addEventListener('DOMContentLoaded', () => {
         updateComboDisplay();
       }, 500);
     }
+    // Update progress bar
+    updateProgressBar();
   }
 
   function saveMissedQuestion(question) {
@@ -535,6 +572,12 @@ document.addEventListener('DOMContentLoaded', () => {
     progressDisplay.textContent = `Question ${current} of ${total}`;
   }
 
+  function updateProgressBar() {
+    const progressBar = document.getElementById('progress-bar');
+    const progressPercent = ((currentQuestionIndex + 1) / totalQuestions) * 100;
+    progressBar.style.width = `${progressPercent}%`;
+  }
+
   function generateOptions(currentQuestion) {
     const optionsSet = new Set();
     optionsSet.add(currentQuestion);
@@ -578,6 +621,21 @@ document.addEventListener('DOMContentLoaded', () => {
       localStorage.setItem('leaderboard', JSON.stringify(leaderboard));
     }
 
+    // Display Achievements
+    displayAchievements();
+
+    // If there are wrong answers, offer to review them
+    if (wrongAnswers.length > 0) {
+      const reviewButton = document.createElement('button');
+      reviewButton.textContent = 'Review Incorrect Answers';
+      reviewButton.className = 'option';
+      quizContainer.appendChild(reviewButton);
+
+      reviewButton.addEventListener('click', () => {
+        reviewIncorrectAnswers();
+      });
+    }
+
     // Option to restart the quiz
     const restartButton = document.createElement('button');
     restartButton.textContent = 'Restart Quiz';
@@ -607,6 +665,57 @@ document.addEventListener('DOMContentLoaded', () => {
 
     leaderboardButton.addEventListener('click', () => {
       window.location.href = 'leaderboard.html';
+    });
+  }
+
+  // Display Achievements
+  function displayAchievements() {
+    const achievements = [];
+    if (score >= 100) {
+      achievements.push('Score Over 100');
+    }
+    if (comboCount >= 5) {
+      achievements.push('Combo Master (Combo of 5)');
+    }
+    // Add more achievements as desired
+
+    if (achievements.length > 0) {
+      const achievementsHeader = document.createElement('h2');
+      achievementsHeader.textContent = 'Achievements Earned!';
+      quizContainer.appendChild(achievementsHeader);
+
+      const achievementsList = document.createElement('ul');
+      achievements.forEach(ach => {
+        const achItem = document.createElement('li');
+        achItem.textContent = ach;
+        achievementsList.appendChild(achItem);
+      });
+      quizContainer.appendChild(achievementsList);
+    }
+  }
+
+  // Review Incorrect Answers
+  function reviewIncorrectAnswers() {
+    quizContainer.innerHTML = '';
+    const reviewHeader = document.createElement('h2');
+    reviewHeader.textContent = 'Review Incorrect Answers';
+    quizContainer.appendChild(reviewHeader);
+
+    wrongAnswers.forEach(question => {
+      const questionItem = document.createElement('div');
+      questionItem.classList.add('review-item');
+      questionItem.innerHTML = `<p>Item: ${question.item}</p><p>Correct PLU Code: ${question.code}</p>`;
+      quizContainer.appendChild(questionItem);
+    });
+
+    // Option to go back to main menu
+    const backButton = document.createElement('button');
+    backButton.textContent = 'Back to Main Menu';
+    backButton.className = 'option';
+    quizContainer.appendChild(backButton);
+
+    backButton.addEventListener('click', () => {
+      resetToStartScreen();
     });
   }
 
@@ -744,147 +853,4 @@ document.addEventListener('DOMContentLoaded', () => {
       if (callback) callback(false);
     };
   }
-});
-// script.js
-
-document.addEventListener('DOMContentLoaded', () => {
-  // (All previous code remains the same up to the 'feedback' function)
-
-  function feedback(isCorrect, currentQuestion, timeOut, selectedButton = null) {
-    if (isCorrect) {
-      // Play correct sound
-      document.getElementById('correct-sound').play();
-
-      comboCount++;
-      // Increment score with combo bonus
-      score += calculateScore(timeLeft, comboCount);
-      updateScoreDisplay();
-      updateComboDisplay();
-      // Remove from missed questions if present
-      removeMissedQuestion(currentQuestion);
-      if (selectedButton) {
-        selectedButton.classList.add('correct');
-        setTimeout(() => {
-          // Automatically proceed to the next question
-          currentQuestionIndex++;
-          loadQuestion();
-        }, 500);
-      } else {
-        // Automatically proceed to the next question
-        currentQuestionIndex++;
-        loadQuestion();
-      }
-    } else {
-      // Play incorrect sound
-      document.getElementById('incorrect-sound').play();
-
-      // Disable input field to prevent further input
-      if (inputField) {
-        inputField.disabled = true;
-      }
-      // Display feedback overlay for incorrect answers
-      if (selectedButton) {
-        selectedButton.classList.add('incorrect');
-      }
-      setTimeout(() => {
-        feedbackOverlay.style.display = 'block';
-        feedbackHeader.textContent = 'Incorrect!';
-        feedbackHeader.style.color = '#F44336';
-        if (timeOut) {
-          feedbackText.textContent = `Time's up! The correct code for ${currentQuestion.item} is ${currentQuestion.code}.`;
-        } else {
-          feedbackText.textContent = `The correct code for ${currentQuestion.item} is ${currentQuestion.code}.`;
-        }
-        // Add to wrong answers to revisit later
-        wrongAnswers.push(currentQuestion);
-        // Save the missed question
-        saveMissedQuestion(currentQuestion);
-        // Reset combo count
-        comboCount = 0;
-        updateScoreDisplay();
-        updateComboDisplay();
-      }, 500);
-    }
-    // Update progress bar
-    updateProgressBar();
-  }
-
-  // Update progress bar
-  function updateProgressBar() {
-    const progressBar = document.getElementById('progress-bar');
-    const progressPercent = ((currentQuestionIndex + 1) / totalQuestions) * 100;
-    progressBar.style.width = `${progressPercent}%`;
-  }
-
-  function endQuiz() {
-    // (Previous code remains the same)
-
-    // Display Achievements
-    displayAchievements();
-
-    // If there are wrong answers, offer to review them
-    if (wrongAnswers.length > 0) {
-      const reviewButton = document.createElement('button');
-      reviewButton.textContent = 'Review Incorrect Answers';
-      reviewButton.className = 'option';
-      quizContainer.appendChild(reviewButton);
-
-      reviewButton.addEventListener('click', () => {
-        reviewIncorrectAnswers();
-      });
-    }
-  }
-
-  // Display Achievements
-  function displayAchievements() {
-    const achievements = [];
-    if (score >= 100) {
-      achievements.push('Score Over 100');
-    }
-    if (comboCount >= 5) {
-      achievements.push('Combo Master (Combo of 5)');
-    }
-    // Add more achievements as desired
-
-    if (achievements.length > 0) {
-      const achievementsHeader = document.createElement('h2');
-      achievementsHeader.textContent = 'Achievements Earned!';
-      quizContainer.appendChild(achievementsHeader);
-
-      const achievementsList = document.createElement('ul');
-      achievements.forEach(ach => {
-        const achItem = document.createElement('li');
-        achItem.textContent = ach;
-        achievementsList.appendChild(achItem);
-      });
-      quizContainer.appendChild(achievementsList);
-    }
-  }
-
-  // Review Incorrect Answers
-  function reviewIncorrectAnswers() {
-    quizContainer.innerHTML = '';
-    const reviewHeader = document.createElement('h2');
-    reviewHeader.textContent = 'Review Incorrect Answers';
-    quizContainer.appendChild(reviewHeader);
-
-    wrongAnswers.forEach(question => {
-      const questionItem = document.createElement('div');
-      questionItem.classList.add('review-item');
-      questionItem.innerHTML = `<p>Item: ${question.item}</p><p>Correct PLU Code: ${question.code}</p>`;
-      quizContainer.appendChild(questionItem);
-    });
-
-    // Option to go back to main menu
-    const backButton = document.createElement('button');
-    backButton.textContent = 'Back to Main Menu';
-    backButton.className = 'option';
-    quizContainer.appendChild(backButton);
-
-    backButton.addEventListener('click', () => {
-      resetToStartScreen();
-    });
-  }
-
-  // (Rest of the code remains unchanged)
 });
